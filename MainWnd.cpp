@@ -22,7 +22,7 @@ int cyScreen;
 
 
 LRESULT CALLBACK MainWndProc(HWND, UINT, WPARAM, LPARAM);
-void OnMainWindowPosChanged(LPARAM);
+void OnMainSize();
 void OnMainDrop(WPARAM);
 BOOL CreateMainWnd();
 BOOL CreateBackgroundDC();
@@ -73,8 +73,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
-	case WM_WINDOWPOSCHANGED:
-		OnMainWindowPosChanged(lParam);
+	case WM_SIZE:
+		OnMainSize();
 		break;
 	case WM_DROPFILES:
 		OnMainDrop(wParam);
@@ -102,26 +102,23 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-void OnMainWindowPosChanged(LPARAM lParam)
+void OnMainSize()
 {
-	WINDOWPOS *p;
 	RECT rc;
 	int w;
 	int h;
 
-	p = (WINDOWPOS *)lParam;
-
-	GetClientRect(hMainWnd, &rc);
-	w = rc.right - rc.left;
-	h = rc.bottom - rc.top;
 	if (bFull)
 	{
-		MoveWindow(hCtrlWnd, (w - 360), (h - 62), 350, 52, TRUE);
+		MoveWindow(hCtrlWnd, (cxScreen - 360), (cyScreen - 62), 350, 52, TRUE);
 		MoveWindow(hPaneWnd, 0, 0, 350, 52, TRUE);
-		MoveWindow(hViewWnd, 0, 0, w, h, TRUE);
+		MoveWindow(hViewWnd, 0, 0, cxScreen, cyScreen, TRUE);
 	}
 	else
 	{
+		GetClientRect(hMainWnd, &rc);
+		w = rc.right - rc.left;
+		h = rc.bottom - rc.top;
 		MoveWindow(hCtrlWnd, 0, (h - 52), w, 52, TRUE);
 		MoveWindow(hPaneWnd, (w - 350) / 2, 0, 350, 52, TRUE);
 		if (!bHideCtrl)
@@ -154,6 +151,7 @@ BOOL CreateMainWnd()
 	if (!br)
 		return FALSE;
 
+	ncm.lfStatusFont.lfHeight = -12;
 	hFont = CreateFontIndirect(&ncm.lfStatusFont);
 	if (!hFont)
 		return FALSE;

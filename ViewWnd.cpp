@@ -181,9 +181,6 @@ void OnViewCommand(WPARAM wParam, LPARAM lParam)
 	case ID_PREV:
 		BitmapPrev();
 		break;
-	case ID_FULL:
-		FullScreen();
-		break;
 	case ID_NEXT:
 		BitmapNext();
 		break;
@@ -267,6 +264,9 @@ void OnViewCommand(WPARAM wParam, LPARAM lParam)
 		ShowWindow(hCtrlWnd, bHideCtrl ? SW_HIDE : SW_SHOW);
 		if (!bFull)
 			PostMessage(hMainWnd, WM_SIZE, 0, 0);
+		break;
+	case ID_FULL:
+		FullScreen();
 		break;
 	case ID_ESC:
 		if (bFull)
@@ -999,33 +999,40 @@ void ShowInfo()
 void FullScreen()
 {
 	LONG_PTR style;
+	WINDOWPLACEMENT wp;
 
-	ShowWindow(hCtrlWnd, SW_HIDE);
-	ShowWindow(hViewWnd, SW_HIDE);
+	bFull = !bFull;
 	style = GetWindowLongPtr(hMainWnd, GWL_STYLE);
 
+	ShowWindow(hViewWnd, SW_HIDE);
+	ShowWindow(hCtrlWnd, SW_HIDE);
 	if (bFull)
 	{
-		style = style | WS_CAPTION | WS_THICKFRAME;
-		SetWindowLongPtr(hMainWnd, GWL_STYLE, style);
-		bFull = FALSE;
-		SetWindowPlacement(hMainWnd, &wpMain);
+		style = style & ~WS_CAPTION & ~WS_THICKFRAME;
+		GetWindowPlacement(hMainWnd, &wpMain);
+		if (wpMain.showCmd == SW_SHOWMAXIMIZED)
+		{
+			SetWindowLongPtr(hMainWnd, GWL_STYLE, style);
+			MoveWindow(hMainWnd, 0, 0, cxScreen, cyScreen, TRUE);
+		}
+		else
+		{
+			MoveWindow(hMainWnd, 0, 0, cxScreen, cyScreen, TRUE);
+			SetWindowLongPtr(hMainWnd, GWL_STYLE, style);
+		}
 	}
 	else
 	{
-		GetWindowPlacement(hMainWnd, &wpMain);
-		style = style & ~WS_CAPTION & ~WS_THICKFRAME;
+		style = style | WS_CAPTION | WS_THICKFRAME;
+		GetWindowPlacement(hMainWnd, &wp);
+		wpMain.showCmd = wp.showCmd;
+		SetWindowLongPtr(hMainWnd, GWL_STYLE, style);
+		SetWindowPlacement(hMainWnd, &wpMain);
 		if (wpMain.showCmd == SW_SHOWMAXIMIZED)
-			SetWindowLongPtr(hMainWnd, GWL_STYLE, style);
-		bFull = TRUE;
-		MoveWindow(hMainWnd, 0, 0, cxScreen, cyScreen, TRUE);
-		if (wpMain.showCmd != SW_SHOWMAXIMIZED)
-			SetWindowLongPtr(hMainWnd, GWL_STYLE, style);
+			PostMessage(hMainWnd, WM_SIZE, 0, 0);
 	}
-
-	if (!bHideCtrl)
-		ShowWindow(hCtrlWnd, SW_SHOW);
 	ShowWindow(hViewWnd, SW_SHOW);
+	ShowWindow(hCtrlWnd, SW_SHOW);
 }
 
 void ShowFailedInfo()
